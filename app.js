@@ -8,6 +8,7 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var gamesRouter = require('./routes/games');
+var userRouter = require('./routes/users')
 
 var app = express();
 const cors = require('cors');
@@ -20,5 +21,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/games', gamesRouter);
+app.use('/users',userRouter)
 
 module.exports = app;

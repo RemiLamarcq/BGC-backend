@@ -26,4 +26,16 @@ router.get('/search/:name', (req, res) => {
         });
 });
 
+// router.post('/update' ,(req,res) => {
+//     Game.updateMany(
+//         { urlImg: 'unknown.jpg' },
+//         { urlImg: 'https://res.cloudinary.com/dml7gsvpj/image/upload/v1709636654/unknown_qjfsel.jpg' }
+//        ).then(() => {
+//         Game.find().then(data => {
+//           console.log(data);
+//         });
+//        });
+// })
+
+
 module.exports = router;
