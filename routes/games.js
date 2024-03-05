@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const User = require('../models/users');
 const Game = require('../models/games');
+require('../models/types');
 
 //A l'affichage de la page "Armoire", récupération des jeux déjà enregistrés par l'user
 router.get('/closet/:token', (req, res) => {
@@ -31,29 +32,24 @@ router.get('/allNames/:token', (req, res) => {
         });
 });
 
-//Ajout d'un jeu dans l'armoire
-// router.get('/:name/:token', (req, res) => {
-//     User.findOne({ token: req.params.token })
-//         .then(user => {
-//             if(user){
-//                 const searchRegex = new RegExp(`^${req.params.name}$`, 'i');
-//                 Game.findOne({ name: searchRegex })
-//                     .populate('gameType')
-//                     .then(game => {
-//                         game ?
-//                             res.json({ result: true, game })
-//                         :
-//                             res.json({ result: false, error: 'missing data' });
-//                     })
-//                     .catch(error => res.json({ result: false, error }));
-//             } else{
-//                 res.json({ result: false, error: 'error token, user not found' });
-//             }
-//         });
-// });
+// Affichage de la page du jeu sélectionné
+router.get('/:name/:token', (req, res) => {
+    User.findOne({ token: req.params.token })
+        .then(user => {
+            if(user){
+                const searchRegex = new RegExp(`^${req.params.name}$`, 'i');
+                Game.findOne({ name: searchRegex })
+                    .populate('gameType')
+                    .then(game => res.json({ result: true, game }))
+            } else{
+                res.json({ result: false, error: 'error token, user not found' });
+            }
+        });
+});
 
+// Ajout d'un jeu dans l'armoire
 // router.put('/closet/add/:name/:token', (req, res) => {
-//     const { token, name } = req.params;
+    // const { token, name } = req.params;
 //     User.findOne({ token })
 //         .then(user => {
 //             if(user){
