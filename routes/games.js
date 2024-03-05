@@ -14,16 +14,58 @@ router.get('/closet/:token', (req, res) => {
         });
 });
 
-/* Lors de l'ajout d'un nouveau jeu, recherche leur présence en BDD de manière insensible à la casse via l'input de la barre de recherche */
-router.get('/search/:name', (req, res) => {
-    const searchRegex = new RegExp(req.params.name, 'i');
-    Game.find({ name: { $regex: searchRegex } })
-        .then(data => {
-            data.length !== 0 ? 
-                res.json({ result: true, data }) 
-            : 
-                res.json({ result: false, error: 'no match found' });
+//Lors de la recherche d'un jeu par l'user, récupère tous les noms des jeux de la collection "games"
+router.get('/allNames/:token', (req, res) => {
+    User.findOne({ token: req.params.token })
+        .then(user => {
+            if(user){
+                Game.find()
+                    .then(data => {
+                        const names = data.map(doc => doc.name);
+                        res.json({ result: true, gameNames: names });
+                    })
+                    .catch(error => res.json({ result: false, error }));
+            } else{
+                res.json({ result: false, error: 'error token, user not found' });
+            }
         });
 });
+
+//Ajout d'un jeu dans l'armoire
+// router.get('/:name/:token', (req, res) => {
+//     User.findOne({ token: req.params.token })
+//         .then(user => {
+//             if(user){
+//                 const searchRegex = new RegExp(`^${req.params.name}$`, 'i');
+//                 Game.findOne({ name: searchRegex })
+//                     .populate('gameType')
+//                     .then(game => {
+//                         game ?
+//                             res.json({ result: true, game })
+//                         :
+//                             res.json({ result: false, error: 'missing data' });
+//                     })
+//                     .catch(error => res.json({ result: false, error }));
+//             } else{
+//                 res.json({ result: false, error: 'error token, user not found' });
+//             }
+//         });
+// });
+
+// router.put('/closet/add/:name/:token', (req, res) => {
+//     const { token, name } = req.params;
+//     User.findOne({ token })
+//         .then(user => {
+//             if(user){
+//                 Game.findOne({ name })
+//                     .then(game => {
+//                         User.updateOne({ token }, { closet: })
+//                             .then()
+//                     })
+//             } else {
+//                 res.json({ result: false, error: 'error token, user not found' });
+//             }
+//         })
+// });
 
 module.exports = router;
