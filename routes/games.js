@@ -86,12 +86,17 @@ router.post('/closet/add/:name/:token', (req, res) => {
             if(!user){
                 res.json({ result: false, error: 'error token, user not found' });
             } else {
-                Game.findOne({ name })
+                const searchRegex = new RegExp(`^${name}$`, 'i');
+                Game.findOne({ name: searchRegex })
                     .then(game => {
-                        user.closet.push({ idGame: game._id, personalNote: 0 });
-                        user.save()
-                            .then(() => res.json({ result: true }))
-                            .catch(error => res.json({ result: false, error }));
+                        if(game){
+                            user.closet.push({ idGame: game._id, personalNote: 0 });
+                            user.save()
+                                .then(() => res.json({ result: true }))
+                                .catch(error => res.json({ result: false, error }));
+                        } else {
+                            res.json({ result: false, error: 'game not found' });
+                        }
                     });
             }
         });
