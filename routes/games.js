@@ -102,4 +102,27 @@ router.post('/closet/add/:name/:token', (req, res) => {
         });
 });
 
+router.delete('/closet/remove/:name/:token', (req, res) => {
+    const { token, name } = req.params;
+    User.findOne({ token })
+        .then(user => {
+            if(!user){
+                res.json({ result: false, error: 'error token, user not found' });
+            } else {
+                const searchRegex = new RegExp(`^${name}$`, 'i');
+                Game.findOne({ name: searchRegex })
+                    .then(game => {
+                        if(game){
+                            user.closet = user.closet.filter(obj => obj.idGame.toString() !== game._id.toString());
+                            user.save()
+                                .then(() => res.json({ result: true }))
+                                .catch(error => res.json({ result: false, error }));
+                        } else {
+                            res.json({ result: false, error: 'game not found' });
+                        }
+                    });
+            }
+        }) 
+});
+
 module.exports = router;
