@@ -8,10 +8,16 @@ require('../models/types');
 router.get('/closet/:token', (req, res) => {
     User.findOne({ token: req.params.token })
         .then(user => {
-            user ? 
-                res.json({ result: true, data: user.closet }) 
-            : 
+            if(!user){
                 res.json({ result: false, error: 'error token, user not found' });
+            } else {
+                user.populate({
+                    path: 'closet.idGame',
+                    populate: {
+                        path: 'gameType',
+                    },
+                }).then(user => res.json({ result: true, data: user.closet }));
+            }
         });
 });
 
@@ -19,49 +25,135 @@ router.get('/closet/:token', (req, res) => {
 router.get('/allNames/:token', (req, res) => {
     User.findOne({ token: req.params.token })
         .then(user => {
-            if(user){
+            if(!user){
+                res.json({ result: false, error: 'error token, user not found' });
+            } else{
                 Game.find()
                     .then(data => {
                         const names = data.map(doc => doc.name);
                         res.json({ result: true, gameNames: names });
                     })
                     .catch(error => res.json({ result: false, error }));
-            } else{
-                res.json({ result: false, error: 'error token, user not found' });
             }
         });
 });
 
 // Affichage de la page du jeu sélectionné
+    //On renvoie les données du jeu et, si le jeu est dans l'armoire de l'user, sa note personnelle.
 router.get('/:name/:token', (req, res) => {
-    User.findOne({ token: req.params.token })
+    const { token, name } = req.params;
+    User.findOne({ token })
         .then(user => {
-            if(user){
-                const searchRegex = new RegExp(`^${req.params.name}$`, 'i');
-                Game.findOne({ name: searchRegex })
-                    .populate('gameType')
-                    .then(game => res.json({ result: true, game }))
-            } else{
+            if(!user){
                 res.json({ result: false, error: 'error token, user not found' });
+            } else{
+                const searchRegex = new RegExp(`^${name}$`, 'i');
+                Game.findOne({ name: searchRegex })
+                    .then(data => {
+                        if(!data){
+                            res.json({ result: false, error: 'game not found' });
+                        } else{
+                            data.populate('gameType')
+                                .then(game => {
+                                    //Vérifie si l'user a déjà le jeu dans l'armoire
+                                    const filteredCloset = user.closet.filter(obj => obj.idGame.toString() === game._id.toString());
+                                    filteredCloset.length !== 0 ? 
+                                        res.json({ 
+                                            result: true,
+                                            isInCloset: true,
+                                            //La déstructuration entraine l'apparition de propriétés internes de l'objet Mongoose 'game'.
+                                            //toObject() permet de transformer l'objet Mongoose en objet JS excluant ainsi ces propriétés non désirées.
+                                            game: { ...game.toObject(), personalNote: filteredCloset[0].personalNote },
+                                        })
+                                    :
+                                        res.json({
+                                            result: true,
+                                            isInCloset: false,
+                                            game,
+                                        });
+                                });
+                        }
+                    });
             }
         });
 });
 
 // Ajout d'un jeu dans l'armoire
-// router.put('/closet/add/:name/:token', (req, res) => {
-    // const { token, name } = req.params;
-//     User.findOne({ token })
-//         .then(user => {
-//             if(user){
-//                 Game.findOne({ name })
-//                     .then(game => {
-//                         User.updateOne({ token }, { closet: })
-//                             .then()
-//                     })
-//             } else {
-//                 res.json({ result: false, error: 'error token, user not found' });
-//             }
-//         })
-// });
+router.post('/closet/add/:name/:token', (req, res) => {
+    const { token, name } = req.params;
+    User.findOne({ token })
+        .then(user => {
+            if(!user){
+                res.json({ result: false, error: 'error token, user not found' });
+            } else {
+                const searchRegex = new RegExp(`^${name}$`, 'i');
+                Game.findOne({ name: searchRegex })
+                    .then(game => {
+                        if(game){
+                            user.closet.push({ idGame: game._id, personalNote: 0 });
+                            user.save()
+                                .then(() => res.json({ result: true }))
+                                .catch(error => res.json({ result: false, error }));
+                        } else {
+                            res.json({ result: false, error: 'game not found' });
+                        }
+                    });
+            }
+        });
+});
+
+router.delete('/closet/remove/:name/:token', (req, res) => {
+    const { token, name } = req.params;
+    User.findOne({ token })
+        .then(user => {
+            if(!user){
+                res.json({ result: false, error: 'error token, user not found' });
+            } else {
+                const searchRegex = new RegExp(`^${name}$`, 'i');
+                Game.findOne({ name: searchRegex })
+                    .then(game => {
+                        if(game){
+                            user.closet = user.closet.filter(obj => obj.idGame.toString() !== game._id.toString());
+                            user.save()
+                                .then(() => res.json({ result: true }))
+                                .catch(error => res.json({ result: false, error }));
+                        } else {
+                            res.json({ result: false, error: 'game not found' });
+                        }
+                    });
+            }
+        }) 
+});
+
+router.put('/score/:name/:token', (req, res) => {
+    const { token, name } = req.params;
+    const { score } = req.body;
+
+    if(!(score >= 0 && score <= 5)){
+        res.json({ result: false, error: 'invalid score' });
+        return;
+    }
+
+    User.findOne({ token })
+        .then(user => {
+            if(!user){
+                res.json({ result: false, error: 'error token, user not found' });
+            } else {
+                const searchRegex = new RegExp(`^${name}$`, 'i');
+                Game.findOne({ name: searchRegex })
+                    .then(game => {
+                        if(!game){
+                            res.json({ result: false, error: 'game not found' });
+                        } else {
+                            const obj = user.closet.find(obj => obj.idGame.toString() === game._id.toString());
+                            obj.personalNote = score;
+                            user.save()
+                                .then(() => res.json({ result: true }))
+                                .catch(error => res.json({ result: false, error }));
+                        }
+                    });
+            }
+        });
+});
 
 module.exports = router;

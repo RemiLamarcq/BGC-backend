@@ -7,7 +7,7 @@ const closetSchema = mongoose.Schema({//sous document
 
 const notePadSchema = mongoose.Schema({//sous document
     title: String,
-    content: Number,
+    content: String,
    });
 
 const userSchema = mongoose.Schema({
