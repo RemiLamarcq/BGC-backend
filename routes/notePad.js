@@ -19,9 +19,9 @@ router.post('/', (req, res) => {
                 idUser = user._id; 
               
                 // insertion en base 
-                user.notePad.push({title: 'testTitle', content: 'testContent'});
+                user.notePad.push(req.body.notePad);
                 user.save()
-                .then(() => res.json({ result: true, user }))
+                .then(() => res.json({ result: true, notePad : user.notePad[user.notePad.length -1]._id }))
                 .catch(error => res.json({ result: false, error }));
             }
         })      
