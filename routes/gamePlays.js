@@ -66,6 +66,7 @@ router.get('/:token', (req, res) => {
                 res.json({ result: false, error: 'error token, user not found' });
             } else {
               GamePlays.find({idUser : user._id})
+              .populate('idGame')
               .then (gamePlays => {
                 res.json({result: true , gamePlays})
               })
