@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt');
 
 router.post('/', (req, res) => {
     let idUser = '';
+    console.log(req.body.notePad)
     User.findOne({ token: req.body.token })
         .then(user => {
             if (!user) {
@@ -20,6 +21,7 @@ router.post('/', (req, res) => {
               
                 // insertion en base 
                 user.notePad.push(req.body.notePad);
+                
                 user.save()
                 .then(() => res.json({ result: true, notePad : user.notePad[user.notePad.length -1]._id }))
                 .catch(error => res.json({ result: false, error }));
