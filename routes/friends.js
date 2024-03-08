@@ -18,7 +18,7 @@ router.post('/addFriend/:token', (req, res) => {
     })
   });
 
-  router.get('/addFriend/:token', (req, res) => {
+  router.get('/getFriends/:token', (req, res) => {
     User.findOne({ token: req.params.token })
     .then(user => {
         if(!user){
