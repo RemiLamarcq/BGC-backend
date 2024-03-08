@@ -10,7 +10,7 @@ router.post('/addFriend/:token', (req, res) => {
         if(!user){
             res.json({ result: false, error: 'error token, user not found' });
         } else{
-            user.friendsName.push('Titi');
+            user.friendsName.push(req.body.newFriend);
                 user.save()
                 .then(() => res.json({ result: true, friendsName : user.friendsName}))
                 .catch(error => res.json({ result: false, error }));
