@@ -38,7 +38,7 @@ router.post('/', (req, res) => {
                     idUser,
                     startDate: req.body.startDate,
                     endDate: req.body.endDate,
-                    players: req.body.players,
+                    players: [{friendName : 'toto', isWinner : true},{friendName : 'titi', isWinner : false}],
                     urlImage: req.body.urlImage,
                     comment: req.body.comment,
                     place: req.body.place,
