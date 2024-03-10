@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const playersSchema = mongoose.Schema({
     friendName : String,
     isWinner : Boolean, 
-    Team : String, 
-    Character : String, 
-    Score : String
+    team : String, 
+    character : String, 
+    score : String
    });
 
 
