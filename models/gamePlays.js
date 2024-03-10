@@ -25,4 +25,6 @@ const gamesPlaySchema = mongoose.Schema({
 
 const GamesPlay = mongoose.model('gamePlays', gamesPlaySchema);
 
+
 module.exports = GamesPlay;
+
