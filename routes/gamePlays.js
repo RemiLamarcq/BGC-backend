@@ -31,7 +31,7 @@ router.post('/', (req, res) => {
             if (!game) {
                 res.json({ result: false, error: 'game not found' });
             } else {
-                console.log('idGame', game._id)
+                // console.log('idGame', game._id)
                 // construction de l'objet newGamePlay
                 const newGamePlay = new GamePlays({
                     idGame: game._id,
