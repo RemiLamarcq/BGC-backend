@@ -14,6 +14,9 @@ var usersRouter = require('./routes/users');
 var gamesRouter = require('./routes/games');
 var gamePlayRouter = require('./routes/gamePlays');
 var notePadRouter = require('./routes/notePad');
+var friendsRouter = require('./routes/friends');
+var statsRouter = require('./routes/stats');
+
 
 
 var app = express();
@@ -30,7 +33,8 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/games', gamesRouter);
 app.use('/gamePlays',gamePlayRouter);
-app.use('/notePad',notePadRouter)
-
+app.use('/notePad',notePadRouter);
+app.use('/friends',friendsRouter)
+app.use('/stats',statsRouter)
 
 module.exports = app;

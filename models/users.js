@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
-const closetSchema = mongoose.Schema({
+const closetSchema = mongoose.Schema({//sous document
     idGame: {type: mongoose.Schema.Types.ObjectId, ref: 'games'},
     personalNote: Number,
    });
 
-const notePadSchema = mongoose.Schema({
+const notePadSchema = mongoose.Schema({//sous document
     title: String,
     content: String,
    });
@@ -15,9 +15,9 @@ const userSchema = mongoose.Schema({
   username: String,
   password: String,
   token: String,
-  closet: [closetSchema], 
+  closet: [closetSchema],//sous document
   friendsName : Array, 
-  notePad : [notePadSchema],
+  notePad : [notePadSchema],//sous document
 
 
 });
