@@ -74,8 +74,17 @@ router.get('/getGeneralsStats/:token', async (req, res) => {
         const userGamePlays = await GamePlays.find({ idUser: user._id });
         gamePlaysNumber = userGamePlays.length;
 
+        // Aggregation 4 -> tous les jeux du closet du user 
+
+        const userCloset = await user.populate({
+            path: 'closet.idGame',
+            populate: {
+                path: 'gameType',
+        }})
+        
+
         // Retour de la réponse des 3 Aggregation 
-        res.json({result : true, mostCommonGame: result[0].mostCommonIdGame, gamesNumber, gamePlaysNumber })
+        res.json({result : true, mostCommonGame: result[0].mostCommonIdGame, gamesNumber, gamePlaysNumber, userCloset : userCloset.closet })
         
     } catch (error) {
         console.error('Error:', error.message);
