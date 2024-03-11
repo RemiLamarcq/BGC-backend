@@ -12,7 +12,6 @@ const app = express();
 router.post('/', (req, res) => {
     let idUser = '';
 
-
     User.findOne({ token: req.body.token })
         .then(user => {
             if (!user) {
@@ -31,18 +30,19 @@ router.post('/', (req, res) => {
             if (!game) {
                 res.json({ result: false, error: 'game not found' });
             } else {
-                console.log('idGame', game._id)
+                console.log(idUser, game._id, req.body)
+                const { startDate, endDate, players, urlImage, comment, place, isInterrupted } = req.body;
                 // construction de l'objet newGamePlay
                 const newGamePlay = new GamePlays({
                     idGame: game._id,
                     idUser,
-                    startDate: req.body.startDate,
-                    endDate: req.body.endDate,
-                    players: [{friendName : 'toto', isWinner : true},{friendName : 'titi', isWinner : false}],
-                    urlImage: req.body.urlImage,
-                    comment: req.body.comment,
-                    place: req.body.place,
-                    isInterrupted: req.body.isInterrupted
+                    startDate,
+                    endDate,
+                    players,
+                    urlImage,
+                    comment,
+                    place,
+                    isInterrupted,
                 });
 
                 // et insertion en base
