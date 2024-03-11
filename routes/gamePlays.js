@@ -83,7 +83,7 @@ router.delete('/:token/:id', (req, res) => {
                 res.json({ result: false, error: 'error token, user not found' });
             } else {
                 GamePlays.deleteOne({_id: req.params.id}).then(data => {
-                    res.json({restult : true, data})
+                    res.json({result : true, data})
                 })              
             }
         });

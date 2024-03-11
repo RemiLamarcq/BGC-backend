@@ -72,7 +72,7 @@ router.get('/getGeneralsStats/:token', async (req, res) => {
         gamePlaysNumber = userGamePlays.length;
 
         // Retour de la réponse des 3 Aggregation 
-        res.json({restult : true, mostCommonGame: result[0].mostCommonIdGame, gamesNumber, gamePlaysNumber })
+        res.json({result : true, mostCommonGame: result[0].mostCommonIdGame, gamesNumber, gamePlaysNumber })
         
     } catch (error) {
         console.error('Error:', error.message);
