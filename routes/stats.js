@@ -26,6 +26,11 @@ router.get('/getGeneralsStats/:token', async (req, res) => {
         // Aggregation 1 -> le jeu le plus présent dans la colletion gameplay de cet UserId
         const result = await gamesPlayModel.aggregate([
             {
+                $match: {
+                    idUser: user._id
+                }
+            },
+            {
                 $group: {
                     _id: '$idGame',
                     count: { $sum: 1 },
