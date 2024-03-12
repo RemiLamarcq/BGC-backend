@@ -62,7 +62,7 @@ router.get('/getGeneralsStats/:token', async (req, res) => {
         ]);
 
         if (result.length > 0) {
-            //res.json({ result: true, mostCommonGame: result[0] });
+            res.json({ result: true, mostCommonGame: result[0] });
         } else {
             res.json({ result: false, message: 'No records found.' });
         }
