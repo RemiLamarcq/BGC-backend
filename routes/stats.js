@@ -16,81 +16,84 @@ const app = express();
 // Ajout de la route GET Stat Generals
 
 router.get('/getGeneralsStats/:token', async (req, res) => {
-    let gamesNumber = ''
-    let gamePlaysNumber = ''
+    let gamesNumber = '';
+    let gamePlaysNumber = '';
+    let responseResult = {};
+
     try {
         // Vérifiez d'abord si le token est valide
         const user = await User.findOne({ token: req.params.token });
         if (!user) {
-            return res.json({ result: false, error: "Invalid token" });
-        }
-
-        // Aggregation 1 -> le jeu le plus présent dans la colletion gameplay de cet UserId
-        const result = await gamesPlayModel.aggregate([
-            {
-                $match: { idUser: user._id }, // Filtrez par l'utilisateur actuel
-            },
-            {
-                $group: {
-                    _id: '$idGame',
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $sort: { count: -1 },
-            },
-            {
-                $limit: 1,
-            },
-            {
-                $lookup: {
-                    from: 'games', // Le nom de la collection des jeux
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'gameInfo',
-                },
-            },
-            {
-                $unwind: '$gameInfo',
-            },
-            {
-                $project: {
-                    mostCommonIdGame: '$gameInfo.name', // Utilisez le champ approprié du jeu que vous souhaitez afficher
-                    count: 1, // Conservez les autres champs si nécessaire
-                },
-            },
-        ]);
-
-        if (result.length > 0) {
-            res.json({ result: true, mostCommonGame: result[0] });
+            responseResult = { result: false, error: "Invalid token" };
         } else {
-            res.json({ result: false, message: 'No records found.' });
+            // Aggregation 1 -> le jeu le plus présent dans la collection gameplay de cet UserId
+            const result = await gamesPlayModel.aggregate([
+                {
+                    $match: { idUser: user._id }, // Filtrez par l'utilisateur actuel
+                },
+                {
+                    $group: {
+                        _id: '$idGame',
+                        count: { $sum: 1 },
+                    },
+                },
+                {
+                    $sort: { count: -1 },
+                },
+                {
+                    $limit: 1,
+                },
+                {
+                    $lookup: {
+                        from: 'games', // Le nom de la collection des jeux
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'gameInfo',
+                    },
+                },
+                {
+                    $unwind: '$gameInfo',
+                },
+                {
+                    $project: {
+                        mostCommonIdGame: '$gameInfo.name', // Utilisez le champ approprié du jeu que vous souhaitez afficher
+                        count: 1, // Conservez les autres champs si nécessaire
+                    },
+                },
+            ]);
+
+            if (result && result.length > 0) {
+                responseResult = { result: true, mostCommonGame: result[0].mostCommonIdGame };
+            } else {
+                responseResult = { result: false, message: 'No records found or empty list.' };
+            }
+
+            // Aggregation 2 -> le nombre de jeux présents dans le closet du user
+            gamesNumber = user.closet.length;
+
+            // Aggregation 3 -> le nombre de parties totales du user
+            const userGamePlays = await GamePlays.find({ idUser: user._id });
+            gamePlaysNumber = userGamePlays.length;
+
+            // Aggregation 4 -> tous les jeux du closet du user
+            const userCloset = await user.populate({
+                path: 'closet.idGame',
+                populate: {
+                    path: 'gameType',
+                }
+            });
+
+            // Ajouter les autres résultats à responseResult si nécessaire
+            responseResult.gamesNumber = gamesNumber;
+            responseResult.gamePlaysNumber = gamePlaysNumber;
+            //responseResult.userCloset = userCloset.closet;
         }
-
-        // Aggregation 2 -> le nombre de jeux présents dans le closet du user
-         
-        const gamesNumber = user.closet.length;
-
-        // Aggregation 3 -> le nombre de parties totales du user
-
-        const userGamePlays = await GamePlays.find({ idUser: user._id });
-        gamePlaysNumber = userGamePlays.length;
-
-        // Aggregation 4 -> tous les jeux du closet du user 
-
-        const userCloset = await user.populate({
-            path: 'closet.idGame',
-            populate: {
-                path: 'gameType',
-        }})
-        
-
-        // Retour de la réponse des 3 Aggregation 
-        res.json({result : true, mostCommonGame: result[0].mostCommonIdGame, gamesNumber, gamePlaysNumber, userCloset : userCloset.closet })
-        
     } catch (error) {
         console.error('Error:', error.message);
-        res.status(500).json({ result: false, error: 'Internal Server Error' });
+        responseResult = { result: false, error: 'Internal Server Error' };
+    } finally {
+        // Retour de la réponse à la fin de la fonction
+        res.json(responseResult);
     }
 });
 
