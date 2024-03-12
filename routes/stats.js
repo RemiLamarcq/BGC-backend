@@ -86,7 +86,7 @@ router.get('/getGeneralsStats/:token', async (req, res) => {
             // Ajouter les autres résultats à responseResult si nécessaire
             responseResult.gamesNumber = gamesNumber;
             responseResult.gamePlaysNumber = gamePlaysNumber;
-            //responseResult.userCloset = userCloset.closet;
+            responseResult.userCloset = userCloset.closet;
         }
     } catch (error) {
         console.error('Error:', error.message);
