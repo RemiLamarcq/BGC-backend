@@ -164,4 +164,57 @@ router.get('/gameInfo/:gameName/:token', async (req, res) => {
     }
 });
 
+router.get('/friendStats/:token/:friendName', async (req, res) => {
+    try {
+        const userToken = req.params.token;
+        const friendName = req.params.friendName;
+
+        // Récupérer l'utilisateur correspondant au token
+        const user = await User.findOne({ token: userToken });
+        if (!user) {
+            return res.status(404).json({ result: false, message: 'User not found' });
+        }
+
+        // Vérifier si l'ami existe dans la liste des amis de l'utilisateur
+        if (!user.friendsName.includes(friendName)) {
+            return res.status(404).json({ result: false, message: 'Friend not found in the user\'s friend list' });
+        }
+
+        // Récupérer les statistiques de l'ami
+        const friendStats = await GamesPlay.aggregate([
+            { $match: { 'players.friendName': friendName } },
+            {
+                $group: {
+                    _id: null,
+                    totalGames: { $sum: 1 },
+                    totalWins: { $sum: { $cond: [{ $eq: ['$players.isWinner', true] }, 1, 0] } },
+                    mostPlayedGame: { $first: '$idGame' },
+                    lastGame: { $max: '$endDate' },
+                },
+            },
+        ]);
+
+        if (friendStats.length === 0) {
+            return res.json({ result: false, message: 'No game plays found for the friend' });
+        }
+
+        // Récupérer le nom du jeu le plus joué
+        const mostPlayedGameName = await Game.findById(friendStats[0].mostPlayedGame, 'name');
+
+        res.json({
+            result: true,
+            friendStats: {
+                totalGames: friendStats[0].totalGames,
+                totalWins: friendStats[0].totalWins,
+                mostPlayedGame: mostPlayedGameName ? mostPlayedGameName.name : null,
+                lastGame: friendStats[0].lastGame,
+            },
+        });
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).json({ result: false, error: 'Internal Server Error' });
+    }
+});
+
+
 module.exports = router;
