@@ -88,6 +88,9 @@ router.get('/verifyCode/:token', async (req, res) => {
             // Mettre à jour le mot de passe de l'utilisateur
             user.password = newPassword;
             await user.save();
+
+            // Supprimer l'entrée de récupération de mot de passe de la base de données
+            await PwdRecovery.deleteOne({ idUser: user._id });
             res.json({ result: true, message: 'Mot de passe modifié avec succès' });
         } else {
             res.json({ result: false, message: 'Le code est invalide' });
