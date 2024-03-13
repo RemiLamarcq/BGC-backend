@@ -16,7 +16,7 @@ var gamePlayRouter = require('./routes/gamePlays');
 var notePadRouter = require('./routes/notePad');
 var friendsRouter = require('./routes/friends');
 var statsRouter = require('./routes/stats');
-
+var photosRouter = require('./routes/photos');
 
 
 var app = express();
@@ -31,9 +31,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/games', gamesRouter);
-app.use('/gamePlays',gamePlayRouter);
-app.use('/notePad',notePadRouter);
-app.use('/friends',friendsRouter)
-app.use('/stats',statsRouter)
+app.use('/gamePlays', gamePlayRouter);
+app.use('/notePad', notePadRouter);
+app.use('/friends', friendsRouter);
+app.use('/stats', statsRouter);
+app.use('/photos', photosRouter);
 
 module.exports = app;
