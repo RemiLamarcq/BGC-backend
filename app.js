@@ -3,6 +3,7 @@ require('./models/connection');
 require('./models/gamePlays');
 require('./models/types');
 require('./models/users');
+require('./models/pwdRecovery');
 const fileUpload = require('express-fileupload');
 
 
@@ -20,10 +21,11 @@ var gamePlayRouter = require('./routes/gamePlays');
 var notePadRouter = require('./routes/notePad');
 var friendsRouter = require('./routes/friends');
 var statsRouter = require('./routes/stats');
-
+var pwdRecoveryRouter = require('./routes/pwdRecovery')
 
 var app = express();
 const cors = require('cors');
+const PwdRecovery = require('./models/pwdRecovery');
 app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
@@ -34,9 +36,10 @@ app.use(fileUpload());
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/games', gamesRouter);
-app.use('/gamePlays', gamePlayRouter);
-app.use('/notePad', notePadRouter);
-app.use('/friends', friendsRouter);
-app.use('/stats', statsRouter);
+app.use('/gamePlays',gamePlayRouter);
+app.use('/notePad',notePadRouter);
+app.use('/friends',friendsRouter);
+app.use('/stats',statsRouter);
+app.use('/pwdRecovery',pwdRecoveryRouter);
 
 module.exports = app;

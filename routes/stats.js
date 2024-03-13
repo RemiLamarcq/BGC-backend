@@ -6,6 +6,7 @@ const Game = require('../models/games');
 const GamePlays = require('../models/gamePlays');
 const GamesPlays = require('../models/gamePlays');
 const GamesPlay = require('../models/gamePlays');
+const Type = require('../models/types');
 require('../models/types');
 const gamesPlayModel = mongoose.model('gamePlays');
 
@@ -226,9 +227,41 @@ router.get('/friendStats/:token/:friendName', async (req, res) => {
 
 // Repartition par type
 
-router.get('/statsByTypes', async (req, res) => {
-    res.json('ok')
+router.get('/statsByTypes/:token', async (req, res) => {
+    try {
+        // Trouver l'utilisateur correspondant au token
+        const user = await User.findOne({ token: req.params.token });
+        if (!user) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
 
-})
+        // Récupérer tous les jeux dans le closet de l'utilisateur
+        const userCloset = user.closet.map(item => item.idGame);
+
+        // Récupérer tous les types de jeux
+        const allTypes = await Type.find();
+
+        // Initialiser un objet pour stocker le nombre de jeux par type
+        const gamesByType = {};
+
+        // Compter le nombre de jeux par type dans le closet de l'utilisateur
+        for (const type of allTypes) {
+            const gamesWithType = await Game.find({ _id: { $in: userCloset }, gameType: type._id });
+            gamesByType[type.type] = gamesWithType.length;
+        }
+
+        // Calculer le pourcentage de jeux par type
+        const totalGames = userCloset.length;
+        const percentages = {};
+        for (const type of Object.keys(gamesByType)) {
+            percentages[type] = (gamesByType[type] / totalGames) * 100;
+        }
+
+        res.json({ percentages });
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).json({ error: 'Erreur interne du serveur' });
+    }
+});
 
 module.exports = router;
