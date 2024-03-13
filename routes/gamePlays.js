@@ -5,63 +5,101 @@ const Game = require('../models/games');
 const GamePlays = require('../models/gamePlays');
 const uniqid = require('uniqid');
 const mongoose = require('mongoose');
-
 const cloudinary = require('cloudinary').v2
 const fs = require('fs');
 require('../models/types');
-
-
-
-
 const app = express();
+const multer = require('multer'); // Middleware pour gérer les fichiers multipart/form-data
+const upload = multer(); // Configuration de multer
 
-// Ajout de la route POST pour ajouter une partie
+// Ajout de la route POST pour ajouter une partie (gère l'envoi de données multipart/form-data)
 
-router.post('/', (req, res) => {
-    let idUser = '';
+router.post('/', async (req, res) => {
+    // Récupérer les données JSON envoyées dans les en-têtes
+    const jsonData = JSON.parse(req.body.json);
+    let userId = '';
+    let gamePlayId = '';
 
-    User.findOne({ token: req.body.token })
+    //Enregistrement des données JSON en base
+    User.findOne({ token: jsonData.token })
         .then(user => {
             if (!user) {
                 res.json({ result: false, error: 'error token, user not found' });
             } else {
                 // récupération de l'iD du user en fonction de son token
-                idUser = user._id;
-                
-       
-
+                userId = user._id;
                 // récupération de l'ID du jeu en fonction de son nom
-                return Game.findOne({ name: req.body.name });
+                return Game.findOne({ name: jsonData.name });
             }
         })
         .then(game => {
             if (!game) {
                 res.json({ result: false, error: 'game not found' });
             } else {
-                console.log(idUser, game._id, req.body)
-                const { startDate, endDate, players,comment, place, isInterrupted } = req.body;
-                // construction de l'objet newGamePlay
+                const { startDate, endDate, players, place, isInterrupted, comment } = jsonData;
                 const newGamePlay = new GamePlays({
                     idGame: game._id,
-                    idUser,
+                    userId,
                     startDate,
                     endDate,
                     players,
-                    comment,
                     place,
+                    urlImage: [],
                     isInterrupted,
+                    comment,
                 });
-
-                // et insertion en base
                 return newGamePlay.save();
             }
         })
-        .then(newGamePlay => {
-            res.json({ result: true, idGamePlay :newGamePlay._id });
+        .then(async (newGamePlay) => {
+            newGamePlay && (gamePlayId = newGamePlay._id);
+            // Récupérer les données du formulaire multipart/form-data
+            const formData = req.files;
+            //Copie des fichiers images dans un dossier temporaire
+            const fileUploadPromises = [];
+            const photoPathsList = [];
+            for (const key in formData) {
+                const photoPath = `./tmp/${uniqid()}.jpg`;
+                photoPathsList.push(photoPath);
+                fileUploadPromises.push( await formData[key].mv(photoPath));
+            }
+
+            // Une fois que toutes les photos sont stockées dans le dossier tmp,
+            // on les enregistre dans cloudinary puis en bdd dans la nouvelle partie créée.
+            Promise.all(fileUploadPromises)
+                .then(async result => {
+                    // Toutes les images ont été téléchargées avec succès
+                    try {
+                        const cloudinaryUploadPromises = [];
+                        
+                        // Parcourir les fichiers téléchargés et les charger dans Cloudinary
+                        for (const photoPath of photoPathsList) {
+                            const resultCloudinary = await cloudinary.uploader.upload(photoPath);
+                            cloudinaryUploadPromises.push(resultCloudinary.secure_url);
+                            fs.unlinkSync(photoPath);
+                        }
+            
+                        // Attendre que toutes les images soient chargées dans Cloudinary
+                        await Promise.all(cloudinaryUploadPromises);
+            
+                        // Mettre à jour la collection GamePlays avec les URL des images
+                        const updateResult = await GamePlays.updateOne(
+                            { _id: newGamePlay._id },
+                            { $push: { urlImage: { $each: cloudinaryUploadPromises } } }
+                        );
+                        if (updateResult.modifiedCount > 0) {
+                            res.json({ result: true });
+                        } else {
+                            res.json({ result: false, error: 'Failed to update gamePlays' });
+                        }
+                    } catch (error) {
+                        res.json({ result: false });
+                    }
+                })
+                .catch(error => {
+                    res.json({ result: false });
+                });           
         })
-        .catch(error => {
-            res.json({ result: false, error: error.message });
-        });
 });
 
 // Affichage des parties de l'utilisateur dans la rubrique cahier 
@@ -96,45 +134,6 @@ router.delete('/:token/:id', (req, res) => {
                 })              
             }
         });
-});
-
-// route post pour l'upload des photos
-
-
-
-router.post('/upload', async (req, res) => {
-    const photoPath = `./tmp/${uniqid()}.jpg`;
-    const resultMove = await req.files.photoFromFront.mv(photoPath);
-
-    if (!resultMove) {
-        try {
-            const resultCloudinary = await cloudinary.uploader.upload(photoPath);
-
-            fs.unlinkSync(photoPath);
-
-            // Créer une instance d'ObjectId
-            const objectIdInstance = new mongoose.Types.ObjectId();
-
-            // Récupérer l'ID de la partie depuis la requête (à ajuster selon votre structure de données)
-            const gameId = objectIdInstance;
-
-            // Mettre à jour la collection gamePlays avec l'URL de la photo
-            const updateResult = await GamePlays.updateOne(
-                { _id: gameId },
-                { $push: { urlImg: resultCloudinary.secure_url } }
-            );
-
-            if (updateResult.nModified > 0) {
-                res.json({ result: true });
-            } else {
-                res.json({ result: false, error: 'Failed to update gamePlays' });
-            }
-        } catch (error) {
-            res.json({ result: false, error: error.message });
-        }
-    } else {
-        res.json({ result: false, error: resultMove });
-    }
 });
 
 module.exports = router;
