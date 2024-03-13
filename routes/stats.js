@@ -169,6 +169,8 @@ router.get('/gameInfo/:gameName/:token', async (req, res) => {
     }
 });
 
+// Stats par joueur 
+
 router.get('/friendStats/:token/:friendName', async (req, res) => {
     try {
         const userToken = req.params.token;
@@ -221,5 +223,12 @@ router.get('/friendStats/:token/:friendName', async (req, res) => {
     }
 });
 
+
+// Repartition par type
+
+router.get('/statsByTypes', async (req, res) => {
+    res.json('ok')
+
+})
 
 module.exports = router;
