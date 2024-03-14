@@ -134,31 +134,32 @@ router.get('/gameInfo/:gameName/:token', async (req, res) => {
         ]);
 
         // Récupérer le nombre de parties
-        const numberOfGames = await GamesPlay.countDocuments({ idGame: gameInfo._id });
+        const numberOfGames = await GamesPlay.countDocuments({ idGame: gameInfo._id, idUser: user._id });
 
-        // Récupérer la durée moyenne d'une partie
-        const averageDuration = await GamesPlay.aggregate([
-            {
-                $match: {
-                    idGame: gameInfo._id,
-                    startDate: { $exists: true },
-                    endDate: { $exists: true },
-                },
-            },
-            {
-                $group: {
-                    _id: null,
-                    averageDuration: { $avg: { $subtract: ['$endDate', '$startDate'] } },
-                },
-            },
-            { $project: { _id: 0, averageDuration: 1 } },
-        ]);
+        // Récupérer la durée moyenne d'une partie associée à l'utilisateur
+const averageDuration = await GamesPlay.aggregate([
+    {
+        $match: {
+            idGame: gameInfo._id,
+            idUser: user._id,
+            startDate: { $exists: true },
+            endDate: { $exists: true },
+        },
+    },
+    {
+        $group: {
+            _id: null,
+            averageDuration: { $avg: { $subtract: ['$endDate', '$startDate'] } },
+        },
+    },
+    { $project: { _id: 0, averageDuration: 1 } },
+]);
 
-        // Récupérer la date de la dernière partie
-        const lastGameDate = await GamesPlay.findOne(
-            { idGame: gameInfo._id },
-            { endDate: 1 }
-        ).sort({ endDate: -1 });
+// Récupérer la date de la dernière partie associée à l'utilisateur
+const lastGameDate = await GamesPlay.findOne(
+    { idGame: gameInfo._id, idUser: user._id },
+    { endDate: 1 }
+).sort({ endDate: -1 });
 
         res.json({
             result: true,
@@ -171,6 +172,7 @@ router.get('/gameInfo/:gameName/:token', async (req, res) => {
                 lastGameDate: lastGameDate ? lastGameDate.endDate : null,
             },
         });
+
     } catch (error) {
         console.error('Error:', error.message);
         res.status(500).json({ result: false, error: 'Internal Server Error' });
