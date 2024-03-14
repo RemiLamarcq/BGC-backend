@@ -68,14 +68,17 @@ router.get('/sendEmail/:email', async (req, res) => {
     }
 });
 
-router.get('/verifyCode/:token', async (req, res) => {
+router.get('/verifyCode/:email', async (req, res) => {
     try {
-        // Rechercher l'utilisateur par son token 
-        const user = await User.findOne({ token: req.params.token });
-        
+        const userEmail = req.params.email;
+
+        // Récupérer l'utilisateur correspondant à l'email
+        const user = await User.findOne({ email: userEmail });
         if (!user) {
-            return res.status(404).json({ result: false, message: 'Utilisateur non trouvé' });
+            return res.status(404).json({ result: false, message: 'E-mail non reconnu' });
         }
+
+        // Récupération de l'idUser depuis le mail 
 
         const idUser = user._id;
         const checkCode = req.body.checkCode;
