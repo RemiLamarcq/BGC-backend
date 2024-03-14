@@ -30,10 +30,15 @@ router.get('/allNames/:token', (req, res) => {
             } else{
                 Game.find()
                     .then(data => {
-                        const names = data.map(doc => doc.name);
-                        res.json({ result: true, gameNames: names });
+                        const gameData = data.map(item => ({
+                            name : item.name,
+                            isScore : item.isScore,
+                            isTeam : item.isTeam,
+                            isCharacter : item.isCharacter
+                        }))
+                        res.json({ result: true, gameData});
                     })
-                    .catch(error => res.json({ result: false, error }));
+                   // .catch(error => res.json({ result: false, error }));
             }
         });
 });
