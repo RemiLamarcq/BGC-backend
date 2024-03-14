@@ -111,58 +111,71 @@ router.get('/gameInfo/:gameName/:token', async (req, res) => {
             return res.status(404).json({ result: false, message: 'User not found' });
         }
 
-        // Récupérer les informations du jeu
-        const gameInfo = await Game.findOne({ name: gameName });
-        if (!gameInfo) {
-            return res.status(404).json({ result: false, message: 'Game not found' });
+        // Récupérer les jeux du user
+        const userGames = await Game.find({ userId: user._id });
+
+        const gameInfos = [];
+
+        // Pour chaque jeu du user, récupérer les informations
+        for (const game of userGames) {
+            const gameInfo = await Game.findOne({ name: game.name });
+            if (!gameInfo) {
+                console.log(`Game "${game.name}" not found`);
+                continue; // Passer au jeu suivant si aucune information n'est trouvée
+            }
+
+            // Récupérer les parties du user pour ce jeu
+            const userGamePlays = await GamesPlay.find({ idGame: gameInfo._id, idUser: user._id });
+
+            // Récupérer le top 3 des meilleurs joueurs pour ce jeu
+            const topPlayers = userGamePlays
+                .filter(play => play.players.isWinner)
+                .reduce((acc, play) => {
+                    play.players.forEach(player => {
+                        if (player.isWinner) {
+                            acc[player.friendName] = (acc[player.friendName] || 0) + 1;
+                        }
+                    });
+                    return acc;
+                }, {});
+            const sortedTopPlayers = Object.entries(topPlayers)
+                .sort(([,winsA], [,winsB]) => winsB - winsA)
+                .slice(0, 3);
+
+            // Récupérer le nombre de parties
+            const numberOfGames = userGamePlays.length;
+
+            // Récupérer la durée moyenne d'une partie
+            const totalDuration = userGamePlays.reduce((acc, play) => {
+                if (play.startDate && play.endDate) {
+                    acc += play.endDate - play.startDate;
+                }
+                return acc;
+            }, 0);
+            const averageDuration = totalDuration / numberOfGames;
+
+            // Récupérer la date de la dernière partie
+            const lastGameDate = userGamePlays.reduce((latestEndDate, play) => {
+                if (play.endDate && (!latestEndDate || play.endDate > latestEndDate)) {
+                    return play.endDate;
+                }
+                return latestEndDate;
+            }, null);
+
+            // Ajouter les informations du jeu à la liste
+            gameInfos.push({
+                imageUrl: gameInfo.urlImg,
+                name: gameInfo.name,
+                topPlayers: sortedTopPlayers,
+                numberOfGames,
+                averageDuration,
+                lastGameDate,
+            });
         }
-
-        // Récupérer le top 3 des meilleurs joueurs
-        const topPlayers = await GamesPlay.aggregate([
-            { $match: { idGame: gameInfo._id, 'players.isWinner': true } },
-            { $unwind: '$players' },
-            { $group: { _id: '$players.friendName', wins: { $sum: 1 } } },
-            { $sort: { wins: -1 } },
-            { $limit: 3 },
-        ]);
-
-        // Récupérer le nombre de parties
-        const numberOfGames = await GamesPlay.countDocuments({ idGame: gameInfo._id });
-
-        // Récupérer la durée moyenne d'une partie
-        const averageDuration = await GamesPlay.aggregate([
-            {
-                $match: {
-                    idGame: gameInfo._id,
-                    startDate: { $exists: true },
-                    endDate: { $exists: true },
-                },
-            },
-            {
-                $group: {
-                    _id: null,
-                    averageDuration: { $avg: { $subtract: ['$endDate', '$startDate'] } },
-                },
-            },
-            { $project: { _id: 0, averageDuration: 1 } },
-        ]);
-
-        // Récupérer la date de la dernière partie
-        const lastGameDate = await GamesPlay.findOne(
-            { idGame: gameInfo._id },
-            { endDate: 1 }
-        ).sort({ endDate: -1 });
 
         res.json({
             result: true,
-            gameInfo: {
-                imageUrl: gameInfo.urlImg,
-                name: gameInfo.name,
-                topPlayers,
-                numberOfGames,
-                averageDuration: averageDuration.length > 0 ? averageDuration[0].averageDuration : 0,
-                lastGameDate: lastGameDate ? lastGameDate.endDate : null,
-            },
+            gameInfos,
         });
     } catch (error) {
         console.error('Error:', error.message);
