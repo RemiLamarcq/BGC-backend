@@ -15,7 +15,7 @@ const upload = multer(); // Configuration de multer
 // Ajout de la route POST pour ajouter une partie (gère l'envoi de données multipart/form-data)
 
 router.post('/', async (req, res) => {
-    // Récupérer les données JSON envoyées dans les en-têtes
+    // Récupération des données JSON envoyées dans les en-têtes
     const jsonData = JSON.parse(req.body.json);
     let userId = '';
     let gamePlayId = '';
@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
                 const { startDate, endDate, players, place, isInterrupted, comment } = jsonData;
                 const newGamePlay = new GamePlays({
                     idGame: game._id,
-                    userId,
+                    idUser: userId,
                     startDate,
                     endDate,
                     players,
@@ -50,7 +50,7 @@ router.post('/', async (req, res) => {
                 });
                 return newGamePlay.save();
             }
-        })
+        }) // Gestion de l'enregistrement des photos
         .then(async (newGamePlay) => {
             newGamePlay && (gamePlayId = newGamePlay._id);
             // Récupérer les données du formulaire multipart/form-data
@@ -59,15 +59,20 @@ router.post('/', async (req, res) => {
             const fileUploadPromises = [];
             const photoPathsList = [];
             for (const key in formData) {
-                const photoPath = `/tmp/${uniqid()}.jpg`;
+                const photoPath = `./tmp/${uniqid()}.jpg`;
                 photoPathsList.push(photoPath);
                 fileUploadPromises.push( await formData[key].mv(photoPath));
+            }
+            // Si aucune photo n'est postée par l'user
+            if(photoPathsList.length === 0){
+                res.json({ result: true });
+                return;
             }
 
             // Une fois que toutes les photos sont stockées dans le dossier tmp,
             // on les enregistre dans cloudinary puis en bdd dans la nouvelle partie créée.
             Promise.all(fileUploadPromises)
-                .then(async result => {
+                .then(async () => {
                     // Toutes les images ont été téléchargées avec succès
                     try {
                         const cloudinaryUploadPromises = [];
@@ -90,15 +95,15 @@ router.post('/', async (req, res) => {
                         if (updateResult.modifiedCount > 0) {
                             res.json({ result: true });
                         } else {
-                            res.json({ result: false, error: 'Failed to update gamePlays' });
+                            res.json({ result: false, error: 'Erreur lors de l\enregistrement des photos en bdd' });
                         }
                     } catch (error) {
-                        res.json({ result: false });
+                        res.json({ result: false, error: 'Erreur lors de l\'enregistrement des photos dans cloudinary' });
                     }
                 })
-                .catch(error => {
-                    res.json({ result: false });
-                });           
+                .catch(() => {
+                    res.json({ result: false, error: 'Erreur lors de l\enregistrement des photos dans le fichier tmp' });
+                });
         })
 });
 
