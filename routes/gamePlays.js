@@ -59,7 +59,7 @@ router.post('/', async (req, res) => {
             const fileUploadPromises = [];
             const photoPathsList = [];
             for (const key in formData) {
-                const photoPath = `./tmp/${uniqid()}.jpg`;
+                const photoPath = `/tmp/${uniqid()}.jpg`;
                 photoPathsList.push(photoPath);
                 fileUploadPromises.push( await formData[key].mv(photoPath));
             }

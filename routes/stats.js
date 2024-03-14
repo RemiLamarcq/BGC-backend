@@ -264,4 +264,48 @@ router.get('/statsByTypes/:token', async (req, res) => {
     }
 });
 
+
+router.get('/statsByGame/:token', async (req, res) => {
+    try {
+        // Récupérer l'utilisateur correspondant au token
+        const user = await User.findOne({ token: req.params.token });
+        
+        if (!user) {
+            return res.status(404).json({ result: false, message: 'Utilisateur non trouvé' });
+        }
+
+        // Récupérer les parties du joueur
+        const gamePlays = await GamesPlay.find({ idUser: user._id });
+
+        // Construire un objet pour stocker les statistiques par jeu
+        const statsByGame = {};
+
+        // Parcourir les parties du joueur pour compter le nombre de parties par jeu
+        gamePlays.forEach(gamePlay => {
+            const gameId = gamePlay.idGame.toString(); // Convertir l'ID du jeu en chaîne pour l'utiliser comme clé
+            if (statsByGame.hasOwnProperty(gameId)) {
+                // Si le jeu existe déjà dans les statistiques, incrémenter le compteur
+                statsByGame[gameId].count++;
+            } else {
+                // Si le jeu n'existe pas encore dans les statistiques, l'ajouter avec un compteur initialisé à 1
+                statsByGame[gameId] = { name: '', count: 1 };
+            }
+        });
+
+        // Récupérer les noms des jeux à partir de la base de données et les associer aux statistiques
+        const gameIds = Object.keys(statsByGame);
+        const games = await Game.find({ _id: { $in: gameIds } });
+        
+        games.forEach(game => {
+            const gameId = game._id.toString();
+            statsByGame[gameId].name = game.name;
+        });
+
+        res.json({ result: true, stats: Object.values(statsByGame) }); // Retourner les statistiques
+    } catch (error) {
+        console.error('Erreur :', error.message);
+        res.status(500).json({ result: false, error: 'Erreur interne du serveur' });
+    }
+});
+
 module.exports = router;
