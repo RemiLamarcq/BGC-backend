@@ -68,7 +68,7 @@ router.get('/sendEmail/:email', async (req, res) => {
     }
 });
 
-router.get('/verifyCode/:email', async (req, res) => {
+router.post('/verifyCode/:email', async (req, res) => {
     try {
         const userEmail = req.params.email;
 
